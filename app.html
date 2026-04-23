@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fabrika — Éditeur</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--bg-panel:#111;--bg-hover:#181818;--border:rgba(255,255,255,.07);--border-hover:rgba(255,255,255,.14);--text:#f5f5f5;--text-dim:rgba(255,255,255,.4);--text-mid:rgba(255,255,255,.65);--accent:#E8FF47;--accent-dim:rgba(232,255,71,.12);--accent-glow:rgba(232,255,71,.25);--danger:#ff4757;--radius:14px;--radius-sm:10px;--font-d:'Unbounded',sans-serif;--font-b:'Outfit',sans-serif;--sidebar:360px}
+*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--font-b);overflow:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.app{display:grid;grid-template-columns:var(--sidebar) 1fr;grid-template-rows:56px 1fr;height:100vh}
+.topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border);background:var(--bg-panel);z-index:50}
+.topbar-logo{font-family:var(--font-d);font-weight:800;font-size:1.1rem;display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text)}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:2px;transform:rotate(45deg)}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.btn-export{background:var(--accent);color:#000;border:none;padding:9px 20px;border-radius:50px;font-weight:600;font-size:.82rem;font-family:var(--font-b);cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .25s}
+.btn-export:hover{transform:translateY(-1px);box-shadow:0 6px 24px var(--accent-glow)}
+.sidebar{background:var(--bg-panel);border-right:1px solid var(--border);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.08) transparent}
+.sidebar::-webkit-scrollbar{width:5px}.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:10px}
+.panel-section{padding:20px;border-bottom:1px solid var(--border)}
+.panel-label{font-size:.65rem;text-transform:uppercase;letter-spacing:2.5px;color:var(--text-dim);font-weight:600;margin-bottom:14px;font-family:var(--font-d)}
+.garments{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.garment-btn{aspect-ratio:1;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--bg);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:all .25s}
+.garment-btn .g-icon{font-size:1.4rem;opacity:.5;transition:opacity .25s}
+.garment-btn span:last-child{font-size:.63rem;color:var(--text-dim);font-weight:500;transition:all .25s}
+.garment-btn:hover{border-color:var(--border-hover);background:var(--bg-hover)}.garment-btn:hover .g-icon{opacity:.8}
+.garment-btn.active{border-color:var(--accent);background:var(--accent-dim)}.garment-btn.active .g-icon{opacity:1}.garment-btn.active span:last-child{color:var(--accent);font-weight:600}
+.view-toggle{display:flex;gap:4px;background:var(--bg);border-radius:var(--radius-sm);padding:4px}
+.view-btn{flex:1;padding:9px 0;border:none;border-radius:8px;background:transparent;color:var(--text-dim);font-size:.8rem;font-weight:500;font-family:var(--font-b);cursor:pointer;transition:all .25s;text-align:center}
+.view-btn:hover{color:var(--text-mid)}.view-btn.active{background:var(--bg-hover);color:var(--text);font-weight:600}
+.colors-row{display:flex;gap:8px;flex-wrap:wrap}
+.color-btn{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all .2s;position:relative}
+.color-btn:hover{transform:scale(1.15)}.color-btn.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.color-btn::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;opacity:0;transition:opacity .2s}
+.color-btn.active::after{opacity:1}.color-btn.light.active::after{color:#000}.color-btn.dark.active::after{color:#fff}
+.design-tabs{display:flex;gap:4px;background:var(--bg);border-radius:var(--radius-sm);padding:4px;margin-bottom:16px}
+.design-tab{flex:1;padding:9px 0;border:none;border-radius:8px;background:transparent;color:var(--text-dim);font-size:.8rem;font-weight:500;font-family:var(--font-b);cursor:pointer;transition:all .25s;text-align:center}
+.design-tab:hover{color:var(--text-mid)}.design-tab.active{background:var(--bg-hover);color:var(--text);font-weight:600}
+.prompt-input{width:100%;min-height:80px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-b);font-size:.88rem;padding:14px;resize:none;transition:border-color .3s;line-height:1.5}
+.prompt-input::placeholder{color:var(--text-dim)}.prompt-input:focus{outline:none;border-color:var(--accent)}
+.style-selector{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.style-chip{padding:6px 14px;border-radius:50px;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-size:.72rem;font-family:var(--font-b);cursor:pointer;transition:all .2s;font-weight:500}
+.style-chip:hover{border-color:var(--border-hover);color:var(--text-mid)}.style-chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.btn-generate{width:100%;margin-top:14px;padding:13px;border:none;border-radius:var(--radius-sm);background:var(--accent);color:#000;font-family:var(--font-b);font-size:.88rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .25s}
+.btn-generate:hover{box-shadow:0 6px 24px var(--accent-glow);transform:translateY(-1px)}
+.btn-generate:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-generate .spinner{width:16px;height:16px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .6s linear infinite;display:none}
+.btn-generate.loading .spinner{display:block}.btn-generate.loading .btn-text{display:none}.btn-generate.loading .loading-text{display:block}.btn-generate .loading-text{display:none}
+.ai-panel{display:none}.ai-panel.active{display:block}.catalogue-panel{display:none}.catalogue-panel.active{display:block}
+.catalogue-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.catalogue-item{aspect-ratio:1;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--bg);cursor:pointer;overflow:hidden;transition:all .25s;display:flex;align-items:center;justify-content:center}
+.catalogue-item:hover{border-color:var(--border-hover);transform:scale(1.03)}.catalogue-item.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-dim)}
+.catalogue-item canvas{width:100%;height:100%}
+.design-controls{display:none}.design-controls.visible{display:block}
+.control-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.control-label{font-size:.78rem;color:var(--text-mid);font-weight:500;white-space:nowrap;min-width:58px}
+.control-slider{flex:1;-webkit-appearance:none;height:4px;border-radius:4px;background:rgba(255,255,255,.08);outline:none}
+.control-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 2px 8px var(--accent-glow)}
+.control-val{font-size:.75rem;color:var(--text-dim);min-width:36px;text-align:right;font-variant-numeric:tabular-nums}
+.btn-reset{width:100%;padding:10px;border:1px solid rgba(255,71,87,.2);border-radius:var(--radius-sm);background:rgba(255,71,87,.06);color:var(--danger);font-family:var(--font-b);font-size:.8rem;font-weight:500;cursor:pointer;transition:all .25s}
+.btn-reset:hover{background:rgba(255,71,87,.12);border-color:rgba(255,71,87,.35)}
+.canvas-area{display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden}
+.canvas-bg-pattern{position:absolute;inset:0;opacity:.025;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.4) 1px,transparent 1px);background-size:24px 24px}
+.canvas-container{position:relative;width:520px;height:580px;display:flex;align-items:center;justify-content:center}
+.garment-display{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.mockup-wrapper{position:relative;display:inline-block}
+.mockup-img{max-height:520px;width:auto;filter:drop-shadow(0 20px 60px rgba(0,0,0,.5));transition:opacity .4s;user-select:none;-webkit-user-drag:none}
+.mockup-img.loading{opacity:.3}
+.color-overlay{position:absolute;inset:0;mix-blend-mode:multiply;pointer-events:none;transition:background .4s}
+.brightness-overlay{position:absolute;inset:0;mix-blend-mode:screen;pointer-events:none;transition:background .4s}
+.mockup-loader{position:absolute;inset:0;display:none;align-items:center;justify-content:center}
+.mockup-loader.visible{display:flex}
+.mockup-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.design-overlay{position:absolute;cursor:move;display:none;border:2px dashed transparent;transition:border-color .2s}
+.design-overlay:hover{border-color:var(--accent)}.design-overlay.dragging{border-color:var(--accent);opacity:.9}
+.design-overlay img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.resize-handle{position:absolute;width:14px;height:14px;background:var(--accent);border-radius:3px;bottom:-7px;right:-7px;cursor:nwse-resize;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-overlay.visible{display:flex}
+.modal{background:var(--bg-panel);border:1px solid var(--border);border-radius:20px;padding:36px;width:420px;max-width:90vw;animation:scaleIn .3s}
+.modal h3{font-family:var(--font-d);font-size:1.1rem;margin-bottom:8px}.modal p{color:var(--text-dim);font-size:.85rem;margin-bottom:24px}
+.export-options{display:flex;flex-direction:column;gap:10px}
+.export-opt{padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:14px}
+.export-opt:hover{border-color:var(--border-hover);background:var(--bg-hover)}
+.export-opt-icon{width:42px;height:42px;border-radius:10px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.export-opt-info h4{font-size:.9rem;font-weight:600;margin-bottom:3px}.export-opt-info span{font-size:.75rem;color:var(--text-dim)}
+.modal-close{margin-top:16px;width:100%;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-mid);font-family:var(--font-b);font-size:.85rem;cursor:pointer;transition:all .2s}
+.modal-close:hover{background:var(--bg-hover);color:var(--text)}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--bg-panel);border:1px solid var(--border);border-radius:50px;padding:12px 24px;font-size:.85rem;color:var(--text);z-index:300;display:flex;align-items:center;gap:10px;box-shadow:0 12px 40px rgba(0,0,0,.5);transition:transform .4s cubic-bezier(.16,1,.3,1)}
+.toast.visible{transform:translateX(-50%) translateY(0)}
+@keyframes scaleIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:56px auto 1fr}.sidebar{border-right:none;border-bottom:1px solid var(--border);max-height:45vh}.canvas-container{width:320px;height:400px}.mockup-img{max-height:360px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a href="index.html" class="topbar-logo"><span class="logo-dot"></span>FABRIKA</a>
+    <div class="topbar-actions">
+      <button class="btn-export" id="btnExport">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Exporter
+      </button>
+    </div>
+  </header>
+  <aside class="sidebar">
+    <div class="panel-section">
+      <div class="panel-label">Support</div>
+      <div class="garments">
+        <button class="garment-btn active" data-garment="tshirt"><span class="g-icon">👕</span><span>T-shirt</span></button>
+        <button class="garment-btn" data-garment="tank"><span class="g-icon">🎽</span><span>Débardeur</span></button>
+        <button class="garment-btn" data-garment="hoodie"><span class="g-icon">🧥</span><span>Pull</span></button>
+        <button class="garment-btn" data-garment="jacket"><span class="g-icon">🧤</span><span>Veste</span></button>
+        <button class="garment-btn" data-garment="cap"><span class="g-icon">🧢</span><span>Casquette</span></button>
+      </div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-label">Vue</div>
+      <div class="view-toggle">
+        <button class="view-btn active" data-view="front">☉ Face</button>
+        <button class="view-btn" data-view="back">◐ Dos</button>
+      </div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-label">Couleur</div>
+      <div class="colors-row">
+        <button class="color-btn light active" data-color="none" style="background:#f5f5f5;border-color:rgba(255,255,255,.15);" title="Original"></button>
+        <button class="color-btn dark" data-color="#1a1a1a" style="background:#1a1a1a;border-color:rgba(255,255,255,.12);" title="Noir"></button>
+        <button class="color-btn dark" data-color="#c0392b" style="background:#c0392b;" title="Rouge"></button>
+        <button class="color-btn dark" data-color="#2980b9" style="background:#2980b9;" title="Bleu"></button>
+        <button class="color-btn dark" data-color="#1e3a5f" style="background:#1e3a5f;" title="Navy"></button>
+        <button class="color-btn dark" data-color="#27ae60" style="background:#27ae60;" title="Vert"></button>
+        <button class="color-btn dark" data-color="#8e44ad" style="background:#8e44ad;" title="Violet"></button>
+        <button class="color-btn dark" data-color="#d35400" style="background:#d35400;" title="Orange"></button>
+        <button class="color-btn dark" data-color="#f39c12" style="background:#f39c12;" title="Jaune"></button>
+        <button class="color-btn dark" data-color="#e84393" style="background:#e84393;" title="Rose"></button>
+      </div>
+    </div>
+    <div class="panel-section" style="border-bottom:none">
+      <div class="panel-label">Design</div>
+      <div class="design-tabs">
+        <button class="design-tab active" data-tab="ai">✦ Générer par IA</button>
+        <button class="design-tab" data-tab="catalogue">◫ Catalogue</button>
+      </div>
+      <div class="ai-panel active" id="aiPanel">
+        <textarea class="prompt-input" id="promptInput" placeholder="Décris ton design... Ex: Un tigre japonais avec des fleurs de cerisier"></textarea>
+        <div class="style-selector">
+          <button class="style-chip active" data-style="illustré">Illustré</button>
+          <button class="style-chip" data-style="néon">Néon</button>
+          <button class="style-chip" data-style="minimaliste">Minimaliste</button>
+          <button class="style-chip" data-style="graffiti">Graffiti</button>
+          <button class="style-chip" data-style="vintage">Vintage</button>
+          <button class="style-chip" data-style="pixel art">Pixel Art</button>
+          <button class="style-chip" data-style="aquarelle">Aquarelle</button>
+          <button class="style-chip" data-style="streetwear">Streetwear</button>
+        </div>
+        <button class="btn-generate" id="btnGenerate"><span class="btn-text">✦ Générer le design</span><span class="loading-text">Génération en cours...</span><span class="spinner"></span></button>
+      </div>
+      <div class="catalogue-panel" id="cataloguePanel"><div class="catalogue-grid" id="catalogueGrid"></div></div>
+    </div>
+    <div class="panel-section design-controls" id="designControls">
+      <div class="panel-label">Ajustements</div>
+      <div class="control-row"><span class="control-label">Taille</span><input type="range" class="control-slider" id="sizeSlider" min="50" max="300" value="160"><span class="control-val" id="sizeVal">160px</span></div>
+      <div class="control-row"><span class="control-label">Rotation</span><input type="range" class="control-slider" id="rotateSlider" min="-180" max="180" value="0"><span class="control-val" id="rotateVal">0°</span></div>
+      <div class="control-row"><span class="control-label">Opacité</span><input type="range" class="control-slider" id="opacitySlider" min="10" max="100" value="100"><span class="control-val" id="opacityVal">100%</span></div>
+      <button class="btn-reset" id="btnReset">✕ Retirer le design</button>
+    </div>
+  </aside>
+  <main class="canvas-area">
+    <div class="canvas-bg-pattern"></div>
+    <div class="canvas-container" id="canvasContainer">
+      <div class="garment-display"><div class="mockup-wrapper" id="mockupWrapper">
+        <img class="mockup-img" id="mockupImg" src="" alt="mockup" draggable="false">
+        <div class="color-overlay" id="colorOverlay"></div>
+        <div class="brightness-overlay" id="brightnessOverlay"></div>
+        <div class="mockup-loader" id="mockupLoader"><div class="mockup-spinner"></div></div>
+      </div></div>
+      <div class="design-overlay" id="designOverlay"><img id="designImg" src="" alt="design"><div class="resize-handle" id="resizeHandle"></div></div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="exportModal"><div class="modal">
+  <h3>Exporter ton design</h3><p>Choisis le format de téléchargement</p>
+  <div class="export-options">
+    <div class="export-opt" id="exportDesign"><div class="export-opt-icon">🖼️</div><div class="export-opt-info"><h4>PNG — Design seul</h4><span>Fond transparent, haute résolution</span></div></div>
+    <div class="export-opt" id="exportMockup"><div class="export-opt-icon">👕</div><div class="export-opt-info"><h4>PNG — Avec mockup</h4><span>Le design placé sur le vêtement</span></div></div>
+  </div>
+  <button class="modal-close" id="closeModal">Annuler</button>
+</div></div>
+
+<div class="toast" id="toast"><span class="toast-icon">✓</span><span id="toastMsg"></span></div>
+<canvas id="exportCanvas" style="display:none"></canvas>
+
+<script>
+// =============================================
+// FABRIKA V3 — GitHub Hosted Mockups + Face/Dos
+// =============================================
+
+const BASE = 'https://neorastudios.github.io/fabrika/mockups';
+const URLS = {
+  tshirt: {front:`${BASE}/tshirt_face.png`,back:`${BASE}/tshirt_dos.png`},
+  tank:   {front:`${BASE}/debardeur_face.png`,  back:`${BASE}/debardeur_dos.png`},
+  hoodie: {front:`${BASE}/pull_face.png`, back:`${BASE}/pull_dos.png`},
+  jacket: {front:`${BASE}/jackette_face.png`, back:`${BASE}/jackette_dos.png`},
+  cap:    {front:`${BASE}/casquette_face.png`,    back:`${BASE}/casquette_dos.png`}
+};
+
+const ZONES = {
+  tshirt: {front:{x:.25,y:.18,w:.50},back:{x:.25,y:.15,w:.50}},
+  tank:   {front:{x:.28,y:.22,w:.44},back:{x:.28,y:.18,w:.44}},
+  hoodie: {front:{x:.28,y:.28,w:.44},back:{x:.25,y:.22,w:.50}},
+  jacket: {front:{x:.30,y:.25,w:.40},back:{x:.25,y:.20,w:.50}},
+  cap:    {front:{x:.28,y:.12,w:.44},back:{x:.30,y:.15,w:.40}}
+};
+
+const S = {
+  garment:'tshirt',view:'front',color:'none',style:'illustré',
+  designs:{front:{src:null,x:0,y:0,sz:160,rot:0,op:100},back:{src:null,x:0,y:0,sz:160,rot:0,op:100}},
+  dragging:false,resizing:false,dragOff:{x:0,y:0}
+};
+const D=()=>S.designs[S.view];
+
+const cache={};
+function preload(url){return new Promise((ok,no)=>{if(cache[url])return ok(cache[url]);const i=new Image;i.crossOrigin='anonymous';i.onload=()=>{cache[url]=i;ok(i)};i.onerror=no;i.src=url})}
+
+const $=id=>document.getElementById(id);
+const mockupImg=$('mockupImg'),colorOv=$('colorOverlay'),brightOv=$('brightnessOverlay'),loader=$('mockupLoader');
+const dOverlay=$('designOverlay'),dImg=$('designImg'),resH=$('resizeHandle'),container=$('canvasContainer');
+const dControls=$('designControls'),szSlider=$('sizeSlider'),rotSlider=$('rotateSlider'),opSlider=$('opacitySlider');
+
+async function renderMockup(){
+  const url=URLS[S.garment][S.view];
+  mockupImg.classList.add('loading');loader.classList.add('visible');
+  try{await preload(url);mockupImg.src=url;mockupImg.onload=()=>{mockupImg.classList.remove('loading');loader.classList.remove('visible');applyColor();renderDesign()}}
+  catch(e){mockupImg.classList.remove('loading');loader.classList.remove('visible');toast('⚠️','Erreur chargement')}
+}
+
+function applyColor(){
+  if(S.color==='none'){colorOv.style.background='transparent';brightOv.style.background='transparent'}
+  else{colorOv.style.background=S.color;brightOv.style.background='transparent'}
+}
+
+function renderDesign(){
+  const d=D();
+  if(!d.src){dOverlay.style.display='none';dControls.classList.remove('visible');return}
+  dImg.src=d.src;dOverlay.style.display='block';dControls.classList.add('visible');
+  szSlider.value=d.sz;rotSlider.value=d.rot;opSlider.value=d.op;
+  $('sizeVal').textContent=d.sz+'px';$('rotateVal').textContent=d.rot+'°';$('opacityVal').textContent=d.op+'%';
+  reposition();
+}
+
+function reposition(){
+  const d=D();if(!d.src)return;
+  const ir=mockupImg.getBoundingClientRect(),cr=container.getBoundingClientRect(),z=ZONES[S.garment][S.view];
+  if(d.x===0&&d.y===0){d.sz=Math.round(ir.width*z.w);d.x=Math.round(ir.left-cr.left+ir.width*z.x);d.y=Math.round(ir.top-cr.top+ir.height*z.y);szSlider.value=d.sz;$('sizeVal').textContent=d.sz+'px'}
+  updatePos();
+}
+
+function updatePos(){const d=D();if(!d.src)return;dOverlay.style.cssText=`display:block;left:${d.x}px;top:${d.y}px;width:${d.sz}px;height:${d.sz}px;transform:rotate(${d.rot}deg);opacity:${d.op/100}`}
+
+function setDesign(src){const d=D();d.src=src;d.x=0;d.y=0;d.rot=0;d.op=100;renderDesign();toast('✦',`Design appliqué (${S.view==='front'?'face':'dos'})`)}
+
+// Garment
+document.querySelectorAll('.garment-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.garment-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  S.garment=b.dataset.garment;S.designs.front.x=0;S.designs.front.y=0;S.designs.back.x=0;S.designs.back.y=0;renderMockup();
+}));
+
+// View
+document.querySelectorAll('.view-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.view-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  S.view=b.dataset.view;renderMockup();
+}));
+
+// Color
+document.querySelectorAll('.color-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.color-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');S.color=b.dataset.color;applyColor();
+}));
+
+// Tabs
+document.querySelectorAll('.design-tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.design-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+  $('aiPanel').classList.toggle('active',t.dataset.tab==='ai');$('cataloguePanel').classList.toggle('active',t.dataset.tab==='catalogue');
+}));
+
+// Styles
+document.querySelectorAll('.style-chip').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.style-chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');S.style=c.dataset.style;
+}));
+
+// AI Gen (placeholder)
+$('btnGenerate').addEventListener('click',async()=>{
+  const p=$('promptInput').value.trim();if(!p){toast('⚠️',"Écris un prompt d'abord !");return}
+  const btn=$('btnGenerate');btn.classList.add('loading');btn.disabled=true;
+  try{const c=document.createElement('canvas');c.width=512;c.height=512;const ctx=c.getContext('2d');
+  await new Promise(r=>setTimeout(r,2000));const h=Math.random()*360;
+  ctx.fillStyle=`hsl(${h},70%,50%)`;ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI*2/6*i-Math.PI/2;ctx.lineTo(256+150*Math.cos(a),256+150*Math.sin(a))}ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.9)';ctx.font='bold 24px Outfit';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.split(' ').slice(0,3).join(' '),256,256);
+  setDesign(c.toDataURL('image/png'))}catch(e){toast('✕','Erreur')}
+  btn.classList.remove('loading');btn.disabled=false;
+});
+
+// Catalogue
+(function(){const g=$('catalogueGrid');
+[{bg:'#E8FF47',s:'hex',l:'☀'},{bg:'#FF6B35',s:'diamond',l:'🔥'},{bg:'#2980b9',s:'circle',l:'🌊'},{bg:'#8e44ad',s:'tri',l:'✦'},{bg:'#2ed573',s:'circle',l:'🌿'},{bg:'#e84393',s:'diamond',l:'💎'},{bg:'#fd79a8',s:'circle',l:'🌸'},{bg:'#00cec9',s:'tri',l:'⚡'},{bg:'#fdcb6e',s:'diamond',l:'⭐'}].forEach(d=>{
+  const el=document.createElement('div');el.className='catalogue-item';
+  const c=document.createElement('canvas');c.width=120;c.height=120;const ctx=c.getContext('2d');
+  ctx.fillStyle='rgba(255,255,255,.02)';ctx.fillRect(0,0,120,120);ctx.fillStyle=d.bg;ctx.globalAlpha=.8;
+  if(d.s==='circle'){ctx.beginPath();ctx.arc(60,60,40,0,Math.PI*2);ctx.fill()}
+  else if(d.s==='diamond'){ctx.beginPath();ctx.moveTo(60,15);ctx.lineTo(100,60);ctx.lineTo(60,105);ctx.lineTo(20,60);ctx.closePath();ctx.fill()}
+  else if(d.s==='hex'){ctx.beginPath();for(let i=0;i<6;i++){const a=Math.PI*2/6*i-Math.PI/2;ctx.lineTo(60+40*Math.cos(a),60+40*Math.sin(a))}ctx.closePath();ctx.fill()}
+  else{ctx.beginPath();ctx.moveTo(60,15);ctx.lineTo(105,100);ctx.lineTo(15,100);ctx.closePath();ctx.fill()}
+  ctx.globalAlpha=1;ctx.font='28px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(d.l,60,60);
+  el.appendChild(c);el.addEventListener('click',()=>{document.querySelectorAll('.catalogue-item').forEach(x=>x.classList.remove('active'));el.classList.add('active');setDesign(c.toDataURL('image/png'))});
+  g.appendChild(el);
+})})();
+
+// Drag
+dOverlay.addEventListener('mousedown',e=>{if(e.target===resH)return;S.dragging=true;dOverlay.classList.add('dragging');const r=dOverlay.getBoundingClientRect();S.dragOff.x=e.clientX-r.left;S.dragOff.y=e.clientY-r.top;e.preventDefault()});
+document.addEventListener('mousemove',e=>{const d=D();
+  if(S.dragging){const r=container.getBoundingClientRect();d.x=e.clientX-r.left-S.dragOff.x;d.y=e.clientY-r.top-S.dragOff.y;updatePos()}
+  if(S.resizing){const r=container.getBoundingClientRect();d.sz=Math.max(40,Math.min(400,Math.max(e.clientX-r.left-d.x,e.clientY-r.top-d.y)));szSlider.value=Math.round(d.sz);$('sizeVal').textContent=Math.round(d.sz)+'px';updatePos()}
+});
+document.addEventListener('mouseup',()=>{S.dragging=false;S.resizing=false;dOverlay.classList.remove('dragging')});
+resH.addEventListener('mousedown',e=>{S.resizing=true;e.preventDefault();e.stopPropagation()});
+
+// Sliders
+szSlider.addEventListener('input',e=>{D().sz=+e.target.value;$('sizeVal').textContent=D().sz+'px';updatePos()});
+rotSlider.addEventListener('input',e=>{D().rot=+e.target.value;$('rotateVal').textContent=D().rot+'°';updatePos()});
+opSlider.addEventListener('input',e=>{D().op=+e.target.value;$('opacityVal').textContent=D().op+'%';updatePos()});
+
+// Reset
+$('btnReset').addEventListener('click',()=>{const d=D();d.src=null;d.x=0;d.y=0;d.sz=160;d.rot=0;d.op=100;dOverlay.style.display='none';dControls.classList.remove('visible');dImg.src='';document.querySelectorAll('.catalogue-item').forEach(x=>x.classList.remove('active'));toast('🗑️',`Design retiré (${S.view==='front'?'face':'dos'})`)});
+
+// Export
+$('btnExport').addEventListener('click',()=>{if(!S.designs.front.src&&!S.designs.back.src){toast('⚠️',"Place un design d'abord !");return}$('exportModal').classList.add('visible')});
+$('closeModal').addEventListener('click',()=>$('exportModal').classList.remove('visible'));
+$('exportModal').addEventListener('click',e=>{if(e.target.id==='exportModal')$('exportModal').classList.remove('visible')});
+
+$('exportDesign').addEventListener('click',()=>{const d=D();if(!d.src){toast('⚠️','Pas de design');return}const a=document.createElement('a');a.href=d.src;a.download=`fabrika-${S.view}.png`;a.click();$('exportModal').classList.remove('visible');toast('✓','PNG téléchargé !')});
+
+$('exportMockup').addEventListener('click',()=>{
+  const cv=$('exportCanvas'),ctx=cv.getContext('2d'),img=new Image;img.crossOrigin='anonymous';
+  img.onload=()=>{const s=2;cv.width=img.width*s;cv.height=img.height*s;ctx.fillStyle='#0a0a0a';ctx.fillRect(0,0,cv.width,cv.height);
+    if(S.color!=='none'){ctx.drawImage(img,0,0,cv.width,cv.height);ctx.globalCompositeOperation='multiply';ctx.fillStyle=S.color;ctx.fillRect(0,0,cv.width,cv.height);ctx.globalCompositeOperation='source-over'}else{ctx.drawImage(img,0,0,cv.width,cv.height)}
+    const d=D();if(d.src){const di=new Image;di.onload=()=>{const z=ZONES[S.garment][S.view],dw=cv.width*z.w*(d.sz/(mockupImg.getBoundingClientRect().width*z.w||160)),dx=cv.width*z.x,dy=cv.height*z.y;
+    ctx.globalAlpha=d.op/100;ctx.save();ctx.translate(dx+dw/2,dy+dw/2);ctx.rotate(d.rot*Math.PI/180);ctx.drawImage(di,-dw/2,-dw/2,dw,dw);ctx.restore();ctx.globalAlpha=1;
+    const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download=`fabrika-${S.garment}-${S.view}.png`;a.click();$('exportModal').classList.remove('visible');toast('✓','Mockup téléchargé !')};di.src=d.src}};
+  img.src=URLS[S.garment][S.view];
+});
+
+function toast(icon,msg){$('toast').querySelector('.toast-icon').textContent=icon;$('toastMsg').textContent=msg;$('toast').classList.add('visible');setTimeout(()=>$('toast').classList.remove('visible'),2500)}
+
+// Preload all
+async function preloadAll(){const p=[];for(const g of Object.values(URLS)){p.push(preload(g.front));p.push(preload(g.back))}try{await Promise.all(p)}catch(e){}}
+
+renderMockup();preloadAll();
+</script>
+</body>
+</html>
